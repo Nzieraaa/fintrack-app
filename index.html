@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <meta name="theme-color" content="#f7e8f2" id="meta-tc"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <title>FinTrack</title>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="css/base.css"/>
+  <link rel="stylesheet" href="css/layout.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body>
+
+<!-- Galaxy canvas (dark mode only) -->
+<canvas id="galaxy-canvas"></canvas>
+
+<!-- ══════════════════════════════════════
+     AUTH LAYER — splash, signin, register
+     (above #app, full screen)
+══════════════════════════════════════ -->
+<div id="auth-layer" style="position:fixed;inset:0;z-index:300;">
+
+  <!-- SPLASH -->
+  <div id="pg-splash" class="auth-page active">
+    <div class="auth-center" style="background:var(--bg-app);min-height:100dvh;flex-direction:column;gap:0;transition:background .35s;">
+      <div class="auth-blob"></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;animation:scaleIn .8s cubic-bezier(.34,1.56,.64,1) both;position:relative;z-index:1;">
+        <img src="assets/logo.png" alt="FinTrack" style="width:min(150px,40vw);height:min(150px,40vw);object-fit:contain;filter:drop-shadow(0 8px 28px rgba(124,82,184,.3));border-radius:24px;"/>
+        <div style="font-size:clamp(28px,8vw,44px);font-weight:900;color:var(--txt-heading);letter-spacing:-.03em;">FinTrack</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);color:var(--txt-soft);font-weight:600;line-height:1.65;max-width:260px;">Pantau, Tabung, Kendalikan<br>Keuangan di Ujung Jari</div>
+      </div>
+      <div style="width:min(280px,90vw);margin-top:52px;display:flex;flex-direction:column;gap:12px;animation:fadeUp .7s .4s ease both;position:relative;z-index:1;">
+        <button class="btn btn-primary" onclick="authGo('signin')">Masuk ke FinTrack</button>
+        <button class="btn btn-outline" onclick="authGo('register')">Buat Akun Baru</button>
+      </div>
+      <div style="position:absolute;bottom:env(safe-area-inset-bottom,28px);font-size:12px;color:var(--txt-muted);font-weight:600;animation:fadeUp .7s .6s ease both;">FinTrack v3.0 &middot; Kelompok 17 &amp; 22</div>
+    </div>
+  </div>
+
+  <!-- SIGN IN -->
+  <div id="pg-signin" class="auth-page">
+    <div class="auth-center" style="background:var(--bg-app);min-height:100dvh;transition:background .35s;">
+      <div class="auth-blob"></div>
+      <div class="auth-card">
+        <div style="text-align:center;margin-bottom:24px;">
+          <img src="assets/logo.png" style="width:56px;height:56px;object-fit:contain;border-radius:14px;margin-bottom:12px;"/>
+          <h2 style="margin-bottom:4px;">Masuk</h2>
+          <p class="text-soft">Selamat datang kembali</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <input id="si-email" class="form-control" type="email" placeholder="email@kamu.com"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="si-pass" class="form-control" type="password" placeholder="Password kamu"/>
+          </div>
+        </div>
+        <div style="text-align:right;margin-bottom:18px;">
+          <button class="btn-ghost" style="font-size:13px;color:var(--clr-primary);padding:0;" onclick="showToast('Fitur lupa password segera hadir')">Lupa password?</button>
+        </div>
+        <button class="btn btn-primary mb-12" onclick="doSignIn()">Masuk</button>
+        <div class="divider-or">atau lanjutkan dengan</div>
+        <div class="flex gap-8 mb-16">
+          <button class="btn-social" onclick="doOAuth('Google')">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google
+          </button>
+          <button class="btn-social" onclick="doOAuth('Facebook')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            Facebook
+          </button>
+        </div>
+        <p class="text-center fs-13 text-soft">Belum punya akun? <button class="btn-ghost" style="color:var(--clr-primary);font-size:13px;padding:0;" onclick="authGo('register')">Daftar sekarang</button></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="pg-register" class="auth-page">
+    <div class="auth-center" style="background:var(--bg-app);min-height:100dvh;transition:background .35s;">
+      <div class="auth-blob"></div>
+      <div class="auth-card">
+        <div style="text-align:center;margin-bottom:20px;">
+          <h2 style="margin-bottom:4px;">Buat Akun</h2>
+          <p class="text-soft">Mulai kelola keuanganmu hari ini</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></span>
+            <input id="rg-name" class="form-control" type="text" placeholder="Nama lengkapmu"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+            <input id="rg-email" class="form-control" type="email" placeholder="email@kamu.com"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <input id="rg-pass" class="form-control" type="password" placeholder="Min. 8 karakter"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Konfirmasi Password</label>
+          <div class="input-wrap">
+            <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+            <input id="rg-pass2" class="form-control" type="password" placeholder="Ulangi password"/>
+          </div>
+        </div>
+        <button class="btn btn-primary mb-12" onclick="doRegister()">Buat Akun</button>
+        <div class="divider-or">atau daftar dengan</div>
+        <div class="flex gap-8 mb-16">
+          <button class="btn-social" onclick="doOAuth('Google')"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Google</button>
+          <button class="btn-social" onclick="doOAuth('Facebook')"><svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>Facebook</button>
+        </div>
+        <p class="text-center fs-13 text-soft">Sudah punya akun? <button class="btn-ghost" style="color:var(--clr-primary);font-size:13px;padding:0;" onclick="authGo('signin')">Masuk</button></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP — shown after login
+══════════════════════════════════════ -->
+<div id="app" style="display:none;">
+
+  <!-- SIDEBAR (desktop) -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="FinTrack"/>
+      <span class="sidebar-logo-text">FinTrack</span>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section-label">Menu</div>
+      <button class="sidebar-item active" data-page="dashboard" onclick="navTo('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        Beranda
+      </button>
+      <button class="sidebar-item" data-page="celengan" onclick="navTo('celengan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M17 10c0-4-3.6-7-8-7S1 6 1 10c0 3.1 2 5.7 5 6.7V20h2v2h2v-2h2v-3.3c3-.9 5-3.6 5-6.7z"/><circle cx="16" cy="6" r="3"/><path d="M19 6h5"/></svg>
+        Celengan
+      </button>
+      <button class="sidebar-item" data-page="tabungan-fleksibel" onclick="navTo('tabungan-fleksibel')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+        Tabungan Fleksibel
+      </button>
+      <button class="sidebar-item" data-page="todo" onclick="navTo('todo')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        To Do List
+      </button>
+      <button class="sidebar-item" data-page="laporan" onclick="navTo('laporan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Laporan
+      </button>
+      <div class="sidebar-section-label" style="margin-top:12px;">Akun</div>
+      <button class="sidebar-item" data-page="pengaturan" onclick="navTo('pengaturan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Pengaturan
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="sidebar-theme-btn" onclick="toggleTheme()" id="sb-theme-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" id="sb-theme-ico"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span id="sb-theme-lbl">Mode Gelap</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN COLUMN -->
+  <div id="main">
+
+    <!-- PAGE VIEWPORT -->
+    <div id="page-viewport">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <!-- Hero header -->
+        <div class="page-hero">
+          <div style="max-width:var(--content-max);margin:0 auto;">
+            <div class="flex-between mb-16">
+              <div>
+                <div class="fs-13 text-soft fw-600">Selamat datang</div>
+                <h2 id="dsh-uname" style="font-size:clamp(18px,5vw,26px);">Pengguna</h2>
+              </div>
+              <div class="flex gap-8">
+                <button class="btn-icon" id="topbar-theme" onclick="toggleTheme()" title="Ganti tema">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" id="topbar-theme-ico"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+                <button class="btn-icon" onclick="navTo('pengaturan')" title="Pengaturan">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="card-hero">
+              <div class="flex-between mb-8">
+                <div><div class="ch-label">Saldo Budget</div><div id="dsh-budget" class="ch-value">Rp 0,-</div></div>
+                <div style="text-align:right;"><div class="ch-label">Tabungan Aktif</div><div id="dsh-scount" class="ch-value">0</div></div>
+              </div>
+              <div class="progress-track hero mb-4"><div id="dsh-bbar" class="progress-fill hero" style="width:0%"></div></div>
+              <div id="dsh-bpct" class="ch-sub">0% sisa budget bulan ini</div>
+            </div>
+          </div>
+        </div>
+        <div class="page-content">
+          <div class="page-inner">
+            <!-- Quick Access -->
+            <div class="grid-4 mb-20">
+              <div class="card card-click" style="padding:14px 10px;text-align:center;" onclick="navTo('celengan')">
+                <div style="width:36px;height:36px;border-radius:var(--r-md);background:var(--clr-primary-light);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" stroke-width="1.8"><path d="M17 10c0-4-3.6-7-8-7S1 6 1 10c0 3.1 2 5.7 5 6.7V20h2v2h2v-2h2v-3.3c3-.9 5-3.6 5-6.7z"/><circle cx="16" cy="6" r="3"/></svg></div>
+                <div class="fs-12 fw-700 text-soft">Celengan</div>
+              </div>
+              <div class="card card-click" style="padding:14px 10px;text-align:center;" onclick="navTo('todo')">
+                <div style="width:36px;height:36px;border-radius:var(--r-md);background:var(--clr-warning-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--clr-warning)" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                <div class="fs-12 fw-700 text-soft">To Do</div>
+              </div>
+              <div class="card card-click" style="padding:14px 10px;text-align:center;" onclick="navTo('laporan')">
+                <div style="width:36px;height:36px;border-radius:var(--r-md);background:var(--clr-success-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--clr-success)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                <div class="fs-12 fw-700 text-soft">Laporan</div>
+              </div>
+              <div class="card card-click" style="padding:14px 10px;text-align:center;" onclick="navTo('pengaturan')">
+                <div style="width:36px;height:36px;border-radius:var(--r-md);background:var(--clr-info-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--clr-info)" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+                <div class="fs-12 fw-700 text-soft">Profil</div>
+              </div>
+            </div>
+
+            <div id="dsh-alert" class="alert alert-warn" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span id="dsh-alert-txt"></span>
+            </div>
+
+            <div class="dash-layout">
+              <div>
+                <div class="sec-hd"><h3>Tabungan Aktif</h3><button class="sec-hd-action" onclick="navTo('celengan')">Lihat semua</button></div>
+                <div id="dsh-savings" class="grid-2"></div>
+              </div>
+              <div>
+                <div class="sec-hd"><h3>Tagihan Mendatang</h3><button class="sec-hd-action" onclick="navTo('todo')">Lihat semua</button></div>
+                <div id="dsh-todos"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CELENGAN ── -->
+      <div class="page" id="page-celengan">
+        <div class="topbar">
+          <div style="width:38px;flex-shrink:0;"></div>
+          <div class="topbar-title">Celengan</div>
+          <button class="btn-icon" onclick="navTo('target-baru')" title="Tambah tabungan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="page-content">
+          <div class="page-inner">
+            <div class="tabs">
+              <button class="tab-btn active" id="tb-aktif" onclick="switchCelenganTab('aktif')">Berlangsung</button>
+              <button class="tab-btn" id="tb-done" onclick="switchCelenganTab('done')">Tercapai</button>
+            </div>
+            <div id="chips-aktif" class="chips">
+              <div class="chip active" onclick="chipSel(this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="8" y2="18"/></svg>Nama</div>
+              <div class="chip" onclick="chipSel(this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="18,15 12,9 6,15"/></svg>Terbesar</div>
+              <div class="chip" onclick="chipSel(this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>Terkecil</div>
+            </div>
+            <div id="list-aktif" class="grid-2"></div>
+            <div id="list-done" class="grid-2" style="display:none;"></div>
+          </div>
+        </div>
+        <button class="fab" onclick="navTo('target-baru')" title="Tambah tabungan">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <!-- ── TARGET BARU ── -->
+      <div class="page" id="page-target-baru">
+        <div class="topbar">
+          <button class="btn-icon topbar-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <div class="topbar-title">Buat Target Baru</div>
+          <button class="btn-save" onclick="saveTarget()">Simpan</button>
+        </div>
+        <div class="page-content">
+          <div class="page-inner" style="max-width:640px;">
+            <div class="img-upload" id="img-area-nt" onclick="document.getElementById('img-file-nt').click()">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+              <p>Tambah gambar motivasi</p>
+            </div>
+            <input id="img-file-nt" type="file" accept="image/*" style="display:none" onchange="previewImg(this,'img-area-nt')"/>
+
+            <div class="form-group">
+              <label class="form-label">Nama Tabungan *</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+                <input id="nt-name" class="form-control" type="text" placeholder="Contoh: Laptop Gaming, Liburan Bali..."/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mata Uang</label>
+              <select id="nt-cur" class="form-control" onchange="updateCurrencyPrefix()">
+                <option value="Rp">Rupiah (Rp)</option>
+                <option value="$">Dollar ($)</option>
+                <option value="€">Euro (€)</option>
+                <option value="¥">Yen (¥)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Tabungan *</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+                <input id="nt-target" class="form-control" type="text" inputmode="numeric" placeholder="0" oninput="onMoneyInput(this,'nt-cur')" onblur="calcEst()"/>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="sec-label">Rencana Pengisian</div>
+            <div class="form-group">
+              <label class="form-label">Frekuensi Menabung</label>
+              <select id="nt-freq" class="form-control" onchange="calcEst()">
+                <option value="1">Harian</option>
+                <option value="7">Mingguan</option>
+                <option value="30" selected>Bulanan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nominal Per Setoran *</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                <input id="nt-amount" class="form-control" type="text" inputmode="numeric" placeholder="0" oninput="onMoneyInput(this,'nt-cur')" onblur="calcEst()"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tanggal Mulai</label>
+              <input id="nt-start" class="form-control" type="date"/>
+            </div>
+
+            <div id="est-box" class="card" style="background:var(--clr-primary-light);border-color:var(--clr-primary);display:none;margin-bottom:16px;">
+              <div class="fs-12 text-soft fw-700 mb-8">Estimasi Tercapai</div>
+              <div id="est-val" style="font-size:22px;font-weight:900;color:var(--clr-primary-dark);"></div>
+              <div id="est-date" class="fs-13 text-soft mt-8"></div>
+            </div>
+
+            <div class="divider"></div>
+            <div class="sec-label">Pengingat</div>
+            <div class="setting-row no-click mb-16">
+              <div class="s-icon" style="background:var(--clr-primary-light);color:var(--clr-primary);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+              <div class="s-info"><div class="s-name">Aktifkan Notifikasi</div><div class="s-desc">Pengingat sesuai jadwal setoran</div></div>
+              <div class="toggle on" id="nt-notif" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <button class="btn btn-primary mb-12" onclick="saveTarget()">Simpan Target</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TABUNGAN FLEKSIBEL ── -->
+      <div class="page" id="page-tabungan-fleksibel">
+        <div class="topbar">
+          <div style="width:38px;flex-shrink:0;"></div>
+          <div class="topbar-title">Tabungan Fleksibel</div>
+          <button class="btn-icon" onclick="navTo('tambah-fleksibel')" title="Tambah">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="page-content">
+          <div class="page-inner">
+            <div id="flex-list" class="grid-2"></div>
+          </div>
+        </div>
+        <button class="fab" onclick="navTo('tambah-fleksibel')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <!-- ── TAMBAH FLEKSIBEL ── -->
+      <div class="page" id="page-tambah-fleksibel">
+        <div class="topbar">
+          <button class="btn-icon topbar-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <div class="topbar-title">Tabungan Fleksibel</div>
+          <button class="btn-save" onclick="saveFleksibel()">Simpan</button>
+        </div>
+        <div class="page-content">
+          <div class="page-inner" style="max-width:640px;">
+            <div class="form-group">
+              <label class="form-label">Nama Tabungan *</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+                <input id="fl-name" class="form-control" type="text" placeholder="Contoh: Dana Darurat, Jajan..."/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mata Uang</label>
+              <select id="fl-cur" class="form-control">
+                <option value="Rp">Rupiah (Rp)</option>
+                <option value="$">Dollar ($)</option>
+                <option value="€">Euro (€)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Saldo Awal (opsional)</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                <input id="fl-saldo" class="form-control" type="text" inputmode="numeric" placeholder="0" oninput="onMoneyInput(this,'fl-cur')"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catatan</label>
+              <textarea id="fl-note" class="form-control" rows="3" placeholder="Tujuan tabungan ini..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveFleksibel()">Simpan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TODO LIST ── -->
+      <div class="page" id="page-todo">
+        <div class="topbar">
+          <div style="width:38px;flex-shrink:0;"></div>
+          <div class="topbar-title">To Do Pengeluaran</div>
+          <button class="btn-icon" onclick="navTo('tambah-todo')" title="Tambah tagihan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="page-content">
+          <div class="page-inner">
+            <div class="card-hero">
+              <div class="ch-label">Estimasi Pengeluaran Bulan Ini</div>
+              <div id="td-total" class="ch-value">Rp 0,-</div>
+              <div class="progress-track hero sm mb-4" style="margin-top:10px;"><div id="td-pbar" class="progress-fill hero" style="width:0%"></div></div>
+              <div id="td-ptext" class="ch-sub">0% sudah ditandai</div>
+            </div>
+            <div class="chips">
+              <div class="chip active" onclick="filterTd('semua',this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Semua</div>
+              <div class="chip" onclick="filterTd('belum',this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>Belum</div>
+              <div class="chip" onclick="filterTd('selesai',this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>Selesai</div>
+              <div class="chip" onclick="filterTd('terlewat',this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Terlewat</div>
+            </div>
+            <div id="td-list"></div>
+          </div>
+        </div>
+        <button class="fab" onclick="navTo('tambah-todo')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+
+      <!-- ── TAMBAH TODO ── -->
+      <div class="page" id="page-tambah-todo">
+        <div class="topbar">
+          <button class="btn-icon topbar-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <div class="topbar-title">Tambah Pengeluaran</div>
+          <button class="btn-save" onclick="saveTodo()">Simpan</button>
+        </div>
+        <div class="page-content">
+          <div class="page-inner" style="max-width:640px;">
+            <div class="form-group">
+              <label class="form-label">Nama Tagihan *</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></span>
+                <input id="td-name" class="form-control" type="text" placeholder="Listrik PLN, Netflix, Cicilan..."/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kategori</label>
+              <select id="td-cat" class="form-control">
+                <option value="home">Rumah &amp; Utilitas</option>
+                <option value="digital">Langganan Digital</option>
+                <option value="food">Makanan &amp; Minuman</option>
+                <option value="transport">Transportasi</option>
+                <option value="edu">Pendidikan</option>
+                <option value="health">Kesehatan</option>
+                <option value="entertain">Hiburan</option>
+                <option value="shop">Belanja</option>
+                <option value="other">Lainnya</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nominal *</label>
+              <div class="input-wrap">
+                <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                <input id="td-amount" class="form-control" type="text" inputmode="numeric" placeholder="0" oninput="onMoneyInput(this,null)"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tanggal Jatuh Tempo *</label>
+              <input id="td-due" class="form-control" type="date"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Periode</label>
+              <select id="td-period" class="form-control">
+                <option>Mingguan</option>
+                <option selected>Bulanan</option>
+                <option>Tahunan</option>
+                <option>Sekali bayar</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catatan</label>
+              <textarea id="td-note" class="form-control" rows="3" placeholder="Catatan tambahan..."></textarea>
+            </div>
+            <div class="setting-row no-click mb-16">
+              <div class="s-icon" style="background:var(--clr-danger-bg);color:var(--clr-danger);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+              <div class="s-info"><div class="s-name">Pengingat Jatuh Tempo</div><div class="s-desc">Notifikasi H-3 sebelum jatuh tempo</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <button class="btn btn-primary" onclick="saveTodo()">Simpan Pengeluaran</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LAPORAN ── -->
+      <div class="page" id="page-laporan">
+        <div class="topbar">
+          <div style="width:38px;flex-shrink:0;"></div>
+          <div class="topbar-title">Laporan Keuangan</div>
+          <div style="width:38px;flex-shrink:0;"></div>
+        </div>
+        <div class="page-content">
+          <div class="page-inner">
+            <div class="chips">
+              <div class="chip active" onclick="chipSel(this)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Bulan Ini</div>
+              <div class="chip" onclick="chipSel(this)">3 Bulan</div>
+              <div class="chip" onclick="chipSel(this)">6 Bulan</div>
+              <div class="chip" onclick="chipSel(this)">Tahun Ini</div>
+            </div>
+            <div class="card-hero">
+              <div class="ch-label">Saldo Tersisa</div>
+              <div id="lp-sisa" class="ch-value">Rp 0,-</div>
+              <div class="ch-sub mb-8">Dari budget <span id="lp-budget">Rp 0,-</span></div>
+              <div class="progress-track hero mb-4"><div id="lp-bar" class="progress-fill hero" style="width:0%"></div></div>
+              <div id="lp-pct" class="ch-sub">0% sisa budget</div>
+            </div>
+            <div id="lp-emergency" class="alert alert-danger" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span><strong>Emergency Fund Alert!</strong> Saldo mendekati batas minimum.</span>
+            </div>
+            <div class="stat-row">
+              <div class="stat-box"><div id="lp-in" class="stat-val" style="color:var(--clr-success);">Rp 0,-</div><div class="stat-lbl">Total Pemasukan</div></div>
+              <div class="stat-box"><div id="lp-out" class="stat-val" style="color:var(--clr-danger);">Rp 0,-</div><div class="stat-lbl">Total Pengeluaran</div></div>
+            </div>
+            <div class="sec-hd"><h3>Catat Transaksi</h3></div>
+            <div class="card mb-16">
+              <div class="flex gap-8 mb-14">
+                <button id="btn-in" style="flex:1;padding:10px;background:var(--clr-success-bg);color:var(--clr-success);font-weight:700;border-radius:var(--r-pill);border:2px solid var(--clr-success);font-family:inherit;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;transition:var(--ease);" onclick="setTrxType('pemasukan')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Pemasukan
+                </button>
+                <button id="btn-out" style="flex:1;padding:10px;background:transparent;color:var(--txt-muted);font-weight:700;border-radius:var(--r-pill);border:2px solid var(--border);font-family:inherit;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;transition:var(--ease);" onclick="setTrxType('pengeluaran')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>Pengeluaran
+                </button>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nominal</label>
+                <div class="input-wrap">
+                  <span class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                  <input id="trx-amt" class="form-control" type="text" inputmode="numeric" placeholder="0" oninput="onMoneyInput(this,null)"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Keterangan</label>
+                <input id="trx-desc" class="form-control" type="text" placeholder="Deskripsi transaksi..."/>
+              </div>
+              <button class="btn btn-primary" onclick="saveTrx()">Catat Transaksi</button>
+            </div>
+            <div class="sec-hd"><h3>Riwayat Transaksi</h3></div>
+            <div class="card" style="padding:8px 16px;"><div id="trx-list"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PENGATURAN ── -->
+      <div class="page" id="page-pengaturan">
+        <div class="topbar">
+          <div style="width:38px;flex-shrink:0;"></div>
+          <div class="topbar-title">Pengaturan</div>
+          <div style="width:38px;flex-shrink:0;"></div>
+        </div>
+        <div class="page-content">
+          <div class="page-inner" style="max-width:640px;">
+            <!-- Profile -->
+            <div class="card flex gap-16 mb-20" style="align-items:center;">
+              <div id="pf-avatar" style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--clr-primary),var(--clr-primary-dark));display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-weight:900;flex-shrink:0;">?</div>
+              <div style="flex:1;min-width:0;">
+                <div id="pf-name" style="font-size:17px;font-weight:900;color:var(--txt-heading);" class="truncate">-</div>
+                <div id="pf-email" style="font-size:13px;" class="text-soft truncate">-</div>
+              </div>
+              <button class="btn btn-secondary" style="font-size:12px;padding:8px 14px;" onclick="showToast('Fitur edit profil segera hadir')">Edit</button>
+            </div>
+
+            <div class="sec-label">Budget &amp; Keuangan</div>
+            <div class="setting-row" onclick="setBudget()">
+              <div class="s-icon" style="background:var(--clr-success-bg);color:var(--clr-success);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+              <div class="s-info"><div class="s-name">Set Budget Bulanan</div><div id="pf-budget" class="s-desc">Budget: Rp 0,-</div></div>
+              <div class="s-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+            </div>
+            <div class="setting-row" onclick="setEmergency()">
+              <div class="s-icon" style="background:var(--clr-warning-bg);color:var(--clr-warning);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+              <div class="s-info"><div class="s-name">Batas Emergency Fund</div><div id="pf-emg" class="s-desc">Alert saat saldo &lt; Rp 500.000,-</div></div>
+              <div class="s-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div>
+            </div>
+
+            <div class="sec-label">Notifikasi</div>
+            <div class="setting-row no-click">
+              <div class="s-icon" style="background:var(--clr-primary-light);color:var(--clr-primary);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+              <div class="s-info"><div class="s-name">Pengingat Menabung</div><div class="s-desc">Notifikasi sesuai jadwal tabungan</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="setting-row no-click">
+              <div class="s-icon" style="background:var(--clr-danger-bg);color:var(--clr-danger);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg></div>
+              <div class="s-info"><div class="s-name">Pengingat Tagihan</div><div class="s-desc">Alert H-3 sebelum jatuh tempo</div></div>
+              <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            </div>
+
+            <div class="sec-label">Tampilan</div>
+            <div class="setting-row no-click" onclick="toggleTheme()">
+              <div class="s-icon" style="background:var(--bg-input);color:var(--txt-soft);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" id="pf-theme-ico"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+              <div class="s-info"><div id="pf-theme-name" class="s-name">Mode Gelap (Galaxy)</div><div id="pf-theme-desc" class="s-desc">Aktifkan tema bintang galaxy</div></div>
+              <div class="toggle" id="pf-dark-toggle" onclick="toggleTheme()"></div>
+            </div>
+
+            <div class="sec-label">Tentang Aplikasi</div>
+            <div class="card mb-10">
+              <div class="flex gap-14 mb-16" style="align-items:center;">
+                <img src="assets/logo.png" style="width:48px;height:48px;object-fit:contain;border-radius:12px;flex-shrink:0;"/>
+                <div><h3 style="font-size:17px;margin-bottom:2px;">FinTrack</h3><div class="fs-13 text-soft">Versi 3.0 &middot; Android &amp; Web</div></div>
+              </div>
+              <div class="divider"></div>
+              <h4 class="mb-8">Tujuan Aplikasi</h4>
+              <p class="mb-16" style="font-size:13px;line-height:1.75;">FinTrack dirancang untuk membantu pengguna usia 6 tahun ke atas dalam mengelola keuangan pribadi secara terorganisir — dari menabung dengan target spesifik, mencatat tagihan rutin, hingga memantau laporan keuangan harian. Semua dalam satu aplikasi yang sederhana dan menyenangkan.</p>
+              <h4 class="mb-10">Fitur Unggulan</h4>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div class="flex gap-12 items-center">
+                  <div class="s-icon" style="width:34px;height:34px;background:var(--clr-primary-light);color:var(--clr-primary);flex-shrink:0;"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M17 10c0-4-3.6-7-8-7S1 6 1 10c0 3.1 2 5.7 5 6.7V20h2v2h2v-2h2v-3.3c3-.9 5-3.6 5-6.7z"/></svg></div>
+                  <div class="fs-13 text-soft">Menabung target spesifik dengan estimasi otomatis</div>
+                </div>
+                <div class="flex gap-12 items-center">
+                  <div class="s-icon" style="width:34px;height:34px;background:var(--clr-warning-bg);color:var(--clr-warning);flex-shrink:0;"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                  <div class="fs-13 text-soft">To Do list tagihan dengan checklist &amp; pengingat</div>
+                </div>
+                <div class="flex gap-12 items-center">
+                  <div class="s-icon" style="width:34px;height:34px;background:var(--clr-success-bg);color:var(--clr-success);flex-shrink:0;"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                  <div class="fs-13 text-soft">Laporan keuangan &amp; emergency fund alert</div>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <h4 class="mb-10">Tim Pengembang</h4>
+              <div class="flex gap-10">
+                <div class="card flex-1" style="text-align:center;padding:14px;background:var(--bg-input);">
+                  <div style="width:40px;height:40px;border-radius:50%;background:var(--clr-primary-light);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></div>
+                  <div class="fw-800 text-heading fs-14">May Syesa</div><div class="fs-12 text-soft">Kelompok 17</div>
+                </div>
+                <div class="card flex-1" style="text-align:center;padding:14px;background:var(--bg-input);">
+                  <div style="width:40px;height:40px;border-radius:50%;background:var(--clr-primary-light);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--clr-primary)" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></div>
+                  <div class="fw-800 text-heading fs-14">Nancy Akisya</div><div class="fs-12 text-soft">Kelompok 22</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-row"><div class="s-icon" style="background:var(--clr-primary-light);color:var(--clr-primary);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="s-info"><div class="s-name">Privasi &amp; Keamanan</div><div class="s-desc">Password, enkripsi data</div></div><div class="s-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div></div>
+            <div class="setting-row"><div class="s-icon" style="background:var(--clr-info-bg);color:var(--clr-info);"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div><div class="s-info"><div class="s-name">Bantuan &amp; FAQ</div><div class="s-desc">Panduan lengkap FinTrack</div></div><div class="s-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg></div></div>
+
+            <div style="height:16px;"></div>
+            <button class="btn btn-danger" onclick="doLogout()">Keluar / Logout</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end page-viewport -->
+
+    <!-- BOTTOM NAV (mobile) -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-page="dashboard" onclick="navTo('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        <span class="nav-btn-label">Beranda</span>
+      </button>
+      <button class="nav-btn" data-page="celengan" onclick="navTo('celengan')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M17 10c0-4-3.6-7-8-7S1 6 1 10c0 3.1 2 5.7 5 6.7V20h2v2h2v-2h2v-3.3c3-.9 5-3.6 5-6.7z"/><circle cx="16" cy="6" r="3"/></svg>
+        <span class="nav-btn-label">Celengan</span>
+      </button>
+      <button class="nav-btn" data-page="todo" onclick="navTo('todo')">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span class="nav-btn-label">To Do</span>
+      </button>
+      <button class="nav-btn" data-page="laporan" onclick="navTo('laporan')">
+        <svg viewBox="0 0 24 24" fill="none"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-btn-label">Laporan</span>
+      </button>
+      <button class="nav-btn" data-page="pengaturan" onclick="navTo('pengaturan')">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        <span class="nav-btn-label">Profil</span>
+      </button>
+    </nav>
+
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<div id="toast-root"></div>
+<!-- Firebase module (ES module, dimuat duluan) -->
+<script type="module" src="js/firebase.js"></script>
+
+<!-- App logic -->
+<script src="js/app.js"></script>
+
+<!-- Firebase sync patch -->
+<script src="js/firebase-sync.js"></script>
+</body>
+</html>
