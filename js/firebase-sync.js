@@ -7,7 +7,7 @@
 
 // ── Helper: apakah Firebase siap? ──────────
 function fbReady() {
-  return !!(window.FB && App.uid);
+  return !!(window.FB && App.user && App.user.uid);
 }
 
 // ── SAVINGS ────────────────────────────────
@@ -39,8 +39,9 @@ window.saveTarget = async function() {
   let id = 'sv_' + Date.now();
   if (fbReady()) {
     try {
-      id = await window.FB.addSaving(App.uid, payload);
+      id = await window.FB.addSaving(App.user.uid, payload);
       showToast('Target tabungan disimpan ke cloud!', 'success');
+      sendEmailNotification(`Target tabungan "${name}" berhasil dibuat! 💰 Target: ${formatMoney(target)}`);
     } catch(e) {
       console.error(e);
       showToast('Disimpan lokal (offline)', 'warn');
@@ -77,7 +78,7 @@ window.openSaving = async function(id) {
 
   if (fbReady()) {
     try {
-      await window.FB.updateSaving(App.uid, id, { current: s.current });
+      await window.FB.updateSaving(App.user.uid, id, { current: s.current });
     } catch(e) { console.error(e); }
   }
   App.save();
@@ -99,7 +100,7 @@ window.saveFleksibel = async function() {
   let id = 'fl_' + Date.now();
   if (fbReady()) {
     try {
-      id = await window.FB.addFlexible(App.uid, payload);
+      id = await window.FB.addFlexible(App.user.uid, payload);
     } catch(e) { console.error(e); }
   }
   App.db.flexible.push({ id, ...payload });
@@ -122,7 +123,7 @@ window.openFleksibel = async function(id) {
   f.saldo = Math.max(0, f.saldo + n);
   if (fbReady()) {
     try {
-      await window.FB.updateFlexible(App.uid, id, { saldo: f.saldo });
+      await window.FB.updateFlexible(App.user.uid, id, { saldo: f.saldo });
     } catch(e) { console.error(e); }
   }
   App.save();
@@ -150,12 +151,13 @@ window.saveTodo = async function() {
   let id = 'td_' + Date.now();
   if (fbReady()) {
     try {
-      id = await window.FB.addTodo(App.uid, payload);
+      id = await window.FB.addTodo(App.user.uid, payload);
     } catch(e) { console.error(e); }
   }
   App.db.todos.push({ id, ...payload });
   App.save();
   showToast('Pengeluaran berhasil disimpan!', 'success');
+  sendEmailNotification(`Tagihan baru ditambahkan: "${name}" sebesar ${formatMoney(amount)}. Jatuh tempo: ${due}`);
   ['td-name','td-amount','td-note'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -169,7 +171,7 @@ window.toggleTodo = async function(id) {
   t.status = states[(states.indexOf(t.status) + 1) % states.length];
   if (fbReady()) {
     try {
-      await window.FB.updateTodo(App.uid, id, { status: t.status });
+      await window.FB.updateTodo(App.user.uid, id, { status: t.status });
     } catch(e) { console.error(e); }
   }
   App.save();
@@ -193,12 +195,13 @@ window.saveTrx = async function() {
   let id = 'trx_' + Date.now();
   if (fbReady()) {
     try {
-      id = await window.FB.addTransaction(App.uid, payload);
+      id = await window.FB.addTransaction(App.user.uid, payload);
     } catch(e) { console.error(e); }
   }
   App.db.trx.unshift({ id, ...payload });
   App.save();
   showToast('Transaksi berhasil dicatat', 'success');
+  sendEmailNotification(`Transaksi ${type} sebesar ${formatMoney(amount)} dengan keterangan: "${desc}" berhasil dicatat!`);
   ['trx-amt','trx-desc'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
   renderLaporan();
 };
@@ -214,7 +217,7 @@ window.setBudget = async function() {
   App.save();
   if (fbReady()) {
     try {
-      await window.FB.saveUserSettings(App.uid, { budget: n });
+      await window.FB.saveUserSettings(App.user.uid, { budget: n });
     } catch(e) { console.error(e); }
   }
   renderPengaturan();
@@ -230,7 +233,7 @@ window.setEmergency = async function() {
   App.save();
   if (fbReady()) {
     try {
-      await window.FB.saveUserSettings(App.uid, { emergency: n });
+      await window.FB.saveUserSettings(App.user.uid, { emergency: n });
     } catch(e) { console.error(e); }
   }
   renderPengaturan();

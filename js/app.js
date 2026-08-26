@@ -15,6 +15,7 @@ const App = {
   currentPage: null,
   pageHistory: [],
   user: null,
+  uid: null,
   trxType: 'pemasukan',
 
   db: {
@@ -432,6 +433,8 @@ async function enterApp(fbUser) {
     email: fbUser.email,
     photo: fbUser.photoURL || null
   };
+
+  App.uid = fbUser.uid; 
 
   // Load data dari Firestore
   await loadUserData(fbUser.uid);
@@ -1005,6 +1008,237 @@ function saveTrx() {
   renderLaporan();
 }
 
+// ══════════════════════════════════════
+// EXPORT PDF & CSV
+// ══════════════════════════════════════
+
+window.exportPDF = function() {
+  const trx = App.db.trx;
+  
+  if (trx.length === 0) {
+    showToast('Belum ada transaksi untuk diekspor', 'error');
+    return;
+  }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    
+    // ==========================================
+    // 1. HEADER DENGAN GRADIENT & LOGO
+    // ==========================================
+    
+    // Background header (kotak ungu)
+    doc.setFillColor(106, 27, 154);
+    doc.rect(0, 0, pageWidth, 45, 'F');
+    
+    // Garis dekoratif bawah header
+    doc.setFillColor(156, 39, 176);
+    doc.rect(0, 45, pageWidth, 3, 'F');
+    
+    // Judul
+    doc.setFontSize(22);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LAPORAN KEUANGAN', pageWidth / 2, 28, { align: 'center' });
+    
+    // Subtitle
+    doc.setFontSize(11);
+    doc.setTextColor(230, 200, 255);
+    doc.setFont('helvetica', 'normal');
+    doc.text('FinTrack - Pantau, Tabung, Kendalikan', pageWidth / 2, 38, { align: 'center' });
+    
+    // ==========================================
+    // 2. INFO USER (KARTU)
+    // ==========================================
+    
+    let y = 60;
+    
+    // Kotak info user
+    doc.setFillColor(248, 240, 255);
+    doc.setDrawColor(200, 180, 220);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, y, pageWidth - (margin * 2), 32, 4, 4, 'FD');
+    
+    doc.setFontSize(11);
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'bold');
+    
+    const userName = App.user?.name || 'Pengguna';
+    const userEmail = App.user?.email || '-';
+    const dateStr = new Date().toLocaleDateString('id-ID', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+    
+    doc.text(` ${userName}`, margin + 10, y + 12);
+    doc.text(` ${userEmail}`, margin + 10, y + 24);
+    doc.setFont('helvetica', 'normal');
+    doc.text(` ${dateStr}`, pageWidth - margin - 10, y + 18, { align: 'right' });
+    
+    y += 48;
+    
+    // ==========================================
+    // 3. RINGKASAN KEUANGAN (3 KOTAK)
+    // ==========================================
+    
+    const income = trx.filter(t => t.type === 'pemasukan').reduce((a,b) => a + b.amount, 0);
+    const outgo  = trx.filter(t => t.type === 'pengeluaran').reduce((a,b) => a + b.amount, 0);
+    const sisa   = income - outgo;
+    
+    const boxWidth = (pageWidth - (margin * 2) - 12) / 3;
+    
+    // Kotak 1: Pemasukan (hijau)
+    doc.setFillColor(232, 245, 233);
+    doc.setDrawColor(102, 187, 106);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, y, boxWidth, 30, 4, 4, 'FD');
+    doc.setFontSize(9);
+    doc.setTextColor(46, 125, 50);
+    doc.setFont('helvetica', 'bold');
+    doc.text(' PEMASUKAN', margin + 6, y + 10);
+    doc.setFontSize(14);
+    doc.setTextColor(27, 94, 32);
+    doc.text(formatMoney(income), margin + 6, y + 25);
+    
+    // Kotak 2: Pengeluaran (merah)
+    doc.setFillColor(253, 237, 237);
+    doc.setDrawColor(239, 83, 80);
+    doc.roundedRect(margin + boxWidth + 6, y, boxWidth, 30, 4, 4, 'FD');
+    doc.setFontSize(9);
+    doc.setTextColor(183, 28, 28);
+    doc.setFont('helvetica', 'bold');
+    doc.text(' PENGELUARAN', margin + boxWidth + 12, y + 10);
+    doc.setFontSize(14);
+    doc.setTextColor(154, 19, 19);
+    doc.text(formatMoney(outgo), margin + boxWidth + 12, y + 25);
+    
+    // Kotak 3: Saldo (ungu/emas)
+    const saldoColor = sisa >= 0 ? [46, 125, 50] : [183, 28, 28];
+    doc.setFillColor(243, 229, 245);
+    doc.setDrawColor(106, 27, 154);
+    doc.roundedRect(margin + (boxWidth + 6) * 2, y, boxWidth, 30, 4, 4, 'FD');
+    doc.setFontSize(9);
+    doc.setTextColor(74, 20, 140);
+    doc.setFont('helvetica', 'bold');
+    doc.text(' SALDO AKHIR', margin + (boxWidth + 6) * 2 + 6, y + 10);
+    doc.setFontSize(14);
+    doc.setTextColor(saldoColor[0], saldoColor[1], saldoColor[2]);
+    doc.text(formatMoney(sisa), margin + (boxWidth + 6) * 2 + 6, y + 25);
+    
+    y += 44;
+    
+    // ==========================================
+    // 4. GARIS PEMISAH
+    // ==========================================
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+    
+    // ==========================================
+    // 5. TABEL TRANSAKSI
+    // ==========================================
+    
+    doc.setFontSize(13);
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text(' DAFTAR TRANSAKSI', margin, y);
+    y += 8;
+    
+    const tableRows = trx.map(t => [
+      new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+      t.desc || '-',
+      t.type === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran',
+      formatMoney(t.amount)
+    ]);
+    
+    doc.autoTable({
+      startY: y,
+      head: [['Tanggal', 'Keterangan', 'Jenis', 'Nominal']],
+      body: tableRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [106, 27, 154],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: 'bold',
+        halign: 'center',
+        valign: 'middle',
+        cellPadding: 5
+      },
+      bodyStyles: {
+        fontSize: 9,
+        cellPadding: 4,
+        valign: 'middle'
+      },
+      columnStyles: {
+        0: { cellWidth: 35, halign: 'center' },
+        1: { cellWidth: 55, halign: 'left' },
+        2: { cellWidth: 30, halign: 'center' },
+        3: { cellWidth: 40, halign: 'right' }
+      },
+      alternateRowStyles: {
+        fillColor: [248, 245, 250]
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body') {
+          if (data.column.index === 2) {
+            if (data.cell.raw === 'Pemasukan') {
+              data.cell.styles.textColor = [46, 125, 50];
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              data.cell.styles.textColor = [211, 47, 47];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        }
+      }
+    });
+    
+    // ==========================================
+    // 6. FOOTER
+    // ==========================================
+    
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      
+      // Garis footer
+      doc.setDrawColor(200, 180, 220);
+      doc.setLineWidth(0.5);
+      doc.line(margin, 278, pageWidth - margin, 278);
+      
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`FinTrack v3.0 · ${new Date().toISOString().split('T')[0]}`, margin, 286);
+      doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth - margin, 286, { align: 'right' });
+      
+      // Logo kecil di footer
+      doc.setTextColor(200, 180, 220);
+      doc.setFontSize(7);
+      doc.text('💜 FinTrack - Kelola Keuangan dengan Bijak', pageWidth / 2, 286, { align: 'center' });
+    }
+    
+    // ==========================================
+    // 7. SAVE PDF
+    // ==========================================
+    
+    doc.save(`Laporan_Keuangan_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('✅ PDF profesional berhasil diekspor!', 'success');
+    
+  } catch (error) {
+    console.error('Export PDF error:', error);
+    showToast('❌ Gagal ekspor PDF: ' + error.message, 'error');
+  }
+};
+
 // ══════════════════════════════════
 // PENGATURAN
 // ══════════════════════════════════
@@ -1066,6 +1300,47 @@ function emptyState(msg, type) {
     <p>${msg}</p>
   </div>`;
 }
+
+// ══════════════════════════════════════
+// SEND EMAIL NOTIFICATION (EmailJS)
+// ══════════════════════════════════════
+
+window.sendEmailNotification = async function(message) {
+  const user = App.user;
+  if (!user) {
+    showToast('⚠️ Login dulu untuk kirim email', 'error');
+    return false;
+  }
+
+  try {
+    // ⭐ GANTI DENGAN SERVICE ID DAN TEMPLATE ID DARI EMAILJS ⭐
+    const serviceId = 'service_o811zc7';
+    const templateId = 'template_4ce0wom';
+    
+    const templateParams = {
+      to_email: user.email,
+      to_name: user.name || 'User',
+      subject: 'Notifikasi Keuangan',
+      message: message || 'Tidak ada pesan.',
+      date: new Date().toLocaleDateString('id-ID', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      })
+    };
+    
+    const response = await emailjs.send(serviceId, templateId, templateParams);
+    console.log('Email terkirim:', response);
+    showToast('📧 Email notifikasi berhasil dikirim!', 'success');
+    return true;
+    
+  } catch (error) {
+    console.error('Kirim email error:', error);
+    showToast('⚠️ Gagal kirim email: ' + error.text, 'error');
+    return false;
+  }
+};
 
 // ══════════════════════════════════
 // INIT

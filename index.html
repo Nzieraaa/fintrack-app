@@ -11,6 +11,18 @@
   <link rel="stylesheet" href="css/base.css"/>
   <link rel="stylesheet" href="css/layout.css"/>
   <link rel="stylesheet" href="css/components.css"/>
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    (function() {
+      // ⭐ GANTI DENGAN PUBLIC KEY DARI EMAILJS ⭐
+      emailjs.init('wkS0Y98Cn69GcV14q');
+    })();
+  </script>
+  <!-- jsPDF untuk ekspor PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
 </head>
 <body>
 
@@ -538,6 +550,15 @@
               <div class="ch-sub mb-8">Dari budget <span id="lp-budget">Rp 0,-</span></div>
               <div class="progress-track hero mb-4"><div id="lp-bar" class="progress-fill hero" style="width:0%"></div></div>
               <div id="lp-pct" class="ch-sub">0% sisa budget</div>
+            </div>
+            <!-- Tombol Ekspor -->
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+              <button class="btn btn-primary" style="flex:1;padding:12px;font-size:13px;" onclick="exportPDF()">
+                📄 Ekspor PDF
+              </button>
+              <button class="btn btn-secondary" style="flex:1;padding:12px;font-size:13px;" onclick="exportCSV()">
+                📊 Ekspor CSV
+              </button>
             </div>
             <div id="lp-emergency" class="alert alert-danger" style="display:none;">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
